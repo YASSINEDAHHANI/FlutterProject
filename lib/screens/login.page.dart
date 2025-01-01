@@ -1,7 +1,8 @@
-import 'dart:io';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'register.page.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({super.key});
@@ -12,184 +13,150 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _mailController = TextEditingController();
+
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _passVisible = false;
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your email!';
-    }
-    final emailPattern = r'^[^@]+@[^@]+\.[^@]+';
-    final regex = RegExp(emailPattern);
-    if (!regex.hasMatch(value)) {
-      return 'Enter a valid email address!';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter your password!';
-    }
-    if (value.length < 6) return 'Password must be at least 6 characters!';
-    return null;
-  }
-
-  Future<void> _signIn() async {
-    try {
-      UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _mailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-
-      if (userCredential.user != null) {
+  Future<void> signIn() async {
+    if (_formKey.currentState!.validate()) {
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Sign-in successful!')),
+          const SnackBar(content: Text('Login Successful!')),
         );
         Navigator.pushReplacementNamed(context, '/home');
+      } catch (e) {
+        Fluttertoast.showToast(msg: 'Error: ${e.toString()}');
       }
-    } on FirebaseAuthException catch (e) {
-      String message;
-      switch (e.code) {
-        case 'user-not-found':
-          message = 'No user found for that email.';
-          break;
-        case 'wrong-password':
-          message = 'Wrong password provided for that user.';
-          break;
-        case 'invalid-email':
-          message = 'The email address is badly formatted.';
-          break;
-        case 'user-disabled':
-          message = 'This user account has been disabled.';
-          break;
-        case 'too-many-requests':
-          message = 'Too many attempts. Please try again later.';
-          break;
-        default:
-          message = 'An error occurred. Try again.';
-      }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    } on SocketException catch (e) {
-      String message = "Network error: Please check your internet connection";
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      print("SocketException: $e");
-    } catch (e) {
-      String message = "An unexpected error occured";
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      print("Unkown error:$e");
     }
+  }
+
+  String? validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email';
+    }
+    final regex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    if (!regex.hasMatch(value)) {
+      return 'Enter a valid email address';
+    }
+    return null;
+  }
+
+  String? validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepOrange,
-        title: Text(
-          'Login Page',
-          style: TextStyle(fontSize: 24, color: Colors.white),
+        backgroundColor: Colors.deepPurpleAccent,
+        title: const Text(
+          'Login',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Form(
           key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(height: 40),
-                Center(
-                  child: Image.asset(
-                    'images/logo_flut.png',
-                    width: 100,
-                    height: 100,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Image.asset(
+                "images/mylogo.png",
+                width: 150,
+                height: 300,
+              ),
+              const SizedBox(height: 16),
+
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  prefixIcon: const Icon(Icons.email, color: Colors.deepPurpleAccent),
                 ),
-                SizedBox(height: 20),
-                Text(
-                  "Welcome Back",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.black87, fontSize: 22),
-                ),
-                SizedBox(height: 30),
-                TextFormField(
-                  controller: _mailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    prefixIcon: Icon(Icons.email),
+                keyboardType: TextInputType.emailAddress,
+                validator: validateEmail,
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                obscureText: !_passVisible,
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: _validateEmail,
-                ),
-                SizedBox(height: 20),
-                TextFormField(
-                  obscureText: !_passVisible,
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  prefixIcon: const Icon(Icons.lock, color: Colors.deepPurpleAccent),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passVisible ? Icons.visibility : Icons.visibility_off,
+                      color: Colors.deepPurpleAccent,
                     ),
-                    prefixIcon: Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _passVisible = !_passVisible;
-                        });
-                      },
-                      icon: Icon(
-                        _passVisible ? Icons.visibility : Icons.visibility_off,
-                      ),
-                    ),
-                  ),
-                  validator: _validatePassword,
-                ),
-                SizedBox(height: 30),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    backgroundColor: Colors.deepOrange,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: _signIn,
-                  child: Text(
-                    'Login',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 20),
-                Center(
-                  child: TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, "/register");
+                      setState(() {
+                        _passVisible = !_passVisible;
+                      });
                     },
-                    child: Text(
-                      'Don\'t have an account? Register here!',
-                      style: TextStyle(color: Colors.deepOrange),
-                    ),
                   ),
                 ),
-              ],
-            ),
+                validator: validatePassword,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurpleAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: signIn,
+                child: const Text(
+                  "Log In",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  // Add password recovery logic here
+                },
+                child: const Text(
+                  'Forgot Password?',
+                  style: TextStyle(color: Colors.deepPurpleAccent),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/register');
+                },
+                child: const Text(
+                  'Create an account',
+                  style: TextStyle(color: Colors.deepPurpleAccent),
+                ),
+              ),
+            ],
           ),
         ),
       ),
